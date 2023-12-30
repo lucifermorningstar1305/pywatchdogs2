@@ -67,6 +67,10 @@ def keys_to_output(keys):
 
 
 def main(file_name, starting_value):
+
+    if not os.path.exists("./data/"):
+        os.mkdir("./data/")
+
     file_name = file_name
     starting_value = starting_value
     training_data = []
