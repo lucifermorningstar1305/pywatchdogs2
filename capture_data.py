@@ -71,8 +71,6 @@ def main(file_name, starting_value):
     if not os.path.exists("./data/"):
         os.mkdir("./data/")
 
-    if not os.path.exists("./data/phase_1"):
-        os.mkdir("./data/phase_1")
 
     file_name = file_name
     starting_value = starting_value
@@ -84,10 +82,12 @@ def main(file_name, starting_value):
     last_time = time.time()
     paused = False
     print('STARTING!!!')
+
+    counter = 1
     while(True):
         
         if not paused:
-            screen = grab_screen(region=(0,40,1920,1120))
+            screen = grab_screen(region=(0,40,1024,768))
             last_time = time.time()
             # resize to something a bit more acceptable for a CNN
             screen = cv2.resize(screen, (512, 512))
@@ -99,6 +99,10 @@ def main(file_name, starting_value):
             training_data.append([screen,output])
 
             print(output)
+
+            cv2.imwrite(f"./data/img{counter}_{output}.png", screen)
+            counter += 1
+
             #print('loop took {} seconds'.format(time.time()-last_time))
             last_time = time.time()
 ##            cv2.imshow('window',cv2.resize(screen,(640,360)))
@@ -106,15 +110,15 @@ def main(file_name, starting_value):
 ##                cv2.destroyAllWindows()
 ##                break
 
-            if len(training_data) % 100 == 0:
-                print(len(training_data))
+            # if len(training_data) % 100 == 0:
+            #     print(len(training_data))
                 
-                if len(training_data) == 1000:
-                    np.save(file_name,training_data)
-                    print('SAVED')
-                    training_data = []
-                    starting_value += 1
-                    file_name = 'E:/pywatchdogs2/data/phase_1/training_data-{}.npy'.format(starting_value)
+            #     if len(training_data) == 1000:
+            #         np.save(file_name,training_data)
+            #         print('SAVED')
+            #         training_data = []
+            #         starting_value += 1
+            #         file_name = 'E:/pywatchdogs2/data/phase_1/training_data-{}.npy'.format(starting_value)
 
                     
         keys = key_check()
