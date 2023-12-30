@@ -71,6 +71,9 @@ def main(file_name, starting_value):
     if not os.path.exists("./data/"):
         os.mkdir("./data/")
 
+    if not os.path.exist("./data/phase_1"):
+        os.mkdir("./data/phase_1")
+
     file_name = file_name
     starting_value = starting_value
     training_data = []
@@ -111,7 +114,7 @@ def main(file_name, starting_value):
                     print('SAVED')
                     training_data = []
                     starting_value += 1
-                    file_name = 'E:/pywatchdogs2/data/phase-1-st/training_data-{}.npy'.format(starting_value)
+                    file_name = 'E:/pywatchdogs2/data/phase_1/training_data-{}.npy'.format(starting_value)
 
                     
         keys = key_check()
