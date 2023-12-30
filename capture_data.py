@@ -25,7 +25,7 @@ w,s,a,d,wa,wd,sa,sd,nk = 0,1,2,3,4,5,6,7,8
 starting_value = 1
 
 while True:
-    file_name = 'training_data-{}.npy'.format(starting_value)
+    file_name = './data/phase_1/training_data-{}.npy'.format(starting_value)
 
     if os.path.isfile(file_name):
         print('File exists, moving along',starting_value)
@@ -71,7 +71,7 @@ def main(file_name, starting_value):
     if not os.path.exists("./data/"):
         os.mkdir("./data/")
 
-    if not os.path.exist("./data/phase_1"):
+    if not os.path.exists("./data/phase_1"):
         os.mkdir("./data/phase_1")
 
     file_name = file_name
@@ -109,7 +109,7 @@ def main(file_name, starting_value):
             if len(training_data) % 100 == 0:
                 print(len(training_data))
                 
-                if len(training_data) == 500:
+                if len(training_data) == 1000:
                     np.save(file_name,training_data)
                     print('SAVED')
                     training_data = []
