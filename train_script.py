@@ -224,39 +224,13 @@ if __name__ == "__main__":
     n_workers = args.n_workers
     n_epochs = args.n_epochs
 
-    # training_files = glob(f"{data_folder}/*/*.npy")
-
-    # datasets = list()
-
-    # progress_bar = Progress(
-    #     TextColumn("[progress.percentage] {task.description}"),
-    #     BarColumn(),
-    #     MofNCompleteColumn(),
-    #     TextColumn("●"),
-    #     TimeRemainingColumn(),
-    #     TextColumn("●"),
-    #     TimeElapsedColumn(),
-    # )
-
-    # # transformation = A.Compose([A.Normalize(always_apply=True)])
-
-    # with progress_bar as p:
-    #     for idx, data_path in enumerate(
-    #         p.track(training_files, description=f"Processing")
-    #     ):
-    #         datasets.append(DrivingDataset(data_path, resize=227, transforms=None))
-    #         gc.collect()
-
-    # datasets = td.ConcatDataset(datasets=datasets)
-
-    # print("Dataset creation successful!!")
-
-    dataset = DrivingDataset(path=data_path, resize=227, transforms=None)
+    transformation = A.Compose([A.Normalize(always_apply=True)])
+    dataset = DrivingDataset(path=data_path, resize=227, transforms=transformation)
 
     dataloader = td.DataLoader(
         dataset=dataset,
         batch_size=batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=n_workers,
         pin_memory=True,
     )
