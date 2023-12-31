@@ -10,6 +10,9 @@ import torch
 import torch.utils.data as td
 import albumentations as A
 import cv2
+import polars as pl
+
+from PIL import Image
 
 
 class DrivingDataset(td.Dataset):
@@ -26,19 +29,22 @@ class DrivingDataset(td.Dataset):
         self.data = self._load_data(path)
 
     def _load_data(self, path: str) -> np.ndarray:
-        data = np.load(path, allow_pickle=True)
+        data = pl.read_parquet(path)
         return data
 
     def __len__(self) -> int:
         return self.data.shape[0]
 
     def __getitem__(self, idx: int) -> Dict:
-        datum = self.data[idx]
+        img_file = self.data.item(idx, "img_file")
+        label = self.data.item(idx, "label")
 
-        img = datum[0]
-        label = datum[1]
+        img = Image.open(img_file).convert("RGB")
 
-        img = cv2.resize(img, self.resize, interpolation=cv2.INTER_NEAREST)
+        img = img.resize(self.resize, resample=Image.Resampling.NEAREST)
+
+        img = np.array(img)
+
         if self.transforms is not None:
             img_obj = self.transforms(image=img)
             img = img_obj["image"]

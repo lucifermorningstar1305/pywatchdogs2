@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--data_folder",
+        "--data_path",
         "-D",
         required=True,
         type=str,
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    data_folder = args.data_folder
+    data_path = args.data_path
     model_folder = args.model_folder
     model_name = args.model_name
     checkpoint_interval = args.checkpoint_interval
@@ -224,35 +224,37 @@ if __name__ == "__main__":
     n_workers = args.n_workers
     n_epochs = args.n_epochs
 
-    training_files = glob(f"{data_folder}/*/*.npy")
+    # training_files = glob(f"{data_folder}/*/*.npy")
 
-    datasets = list()
+    # datasets = list()
 
-    progress_bar = Progress(
-        TextColumn("[progress.percentage] {task.description}"),
-        BarColumn(),
-        MofNCompleteColumn(),
-        TextColumn("●"),
-        TimeRemainingColumn(),
-        TextColumn("●"),
-        TimeElapsedColumn(),
-    )
+    # progress_bar = Progress(
+    #     TextColumn("[progress.percentage] {task.description}"),
+    #     BarColumn(),
+    #     MofNCompleteColumn(),
+    #     TextColumn("●"),
+    #     TimeRemainingColumn(),
+    #     TextColumn("●"),
+    #     TimeElapsedColumn(),
+    # )
 
-    # transformation = A.Compose([A.Normalize(always_apply=True)])
+    # # transformation = A.Compose([A.Normalize(always_apply=True)])
 
-    with progress_bar as p:
-        for idx, data_path in enumerate(
-            p.track(training_files, description=f"Processing")
-        ):
-            datasets.append(DrivingDataset(data_path, resize=227, transforms=None))
-            gc.collect()
+    # with progress_bar as p:
+    #     for idx, data_path in enumerate(
+    #         p.track(training_files, description=f"Processing")
+    #     ):
+    #         datasets.append(DrivingDataset(data_path, resize=227, transforms=None))
+    #         gc.collect()
 
-    datasets = td.ConcatDataset(datasets=datasets)
+    # datasets = td.ConcatDataset(datasets=datasets)
 
-    print("Dataset creation successful!!")
+    # print("Dataset creation successful!!")
+
+    dataset = DrivingDataset(path=data_path, resize=227, transforms=None)
 
     dataloader = td.DataLoader(
-        dataset=datasets,
+        dataset=dataset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=n_workers,
