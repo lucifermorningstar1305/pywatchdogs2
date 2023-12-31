@@ -238,15 +238,13 @@ if __name__ == "__main__":
         TimeElapsedColumn(),
     )
 
-    transformation = A.Compose([A.Normalize(always_apply=True)])
+    # transformation = A.Compose([A.Normalize(always_apply=True)])
 
     with progress_bar as p:
         for idx, data_path in enumerate(
             p.track(training_files, description=f"Processing")
         ):
-            datasets.append(
-                DrivingDataset(data_path, resize=227, transforms=transformation)
-            )
+            datasets.append(DrivingDataset(data_path, resize=227, transforms=None))
             gc.collect()
 
     datasets = td.ConcatDataset(datasets=datasets)
