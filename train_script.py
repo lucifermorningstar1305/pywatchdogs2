@@ -332,7 +332,7 @@ if __name__ == "__main__":
 
     train_data, val_data = train_test_split(
         data,
-        test_size=0.2,
+        test_size=0.001,
         shuffle=True,
         stratify=data.select("label"),
         random_state=32,
