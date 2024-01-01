@@ -10,6 +10,8 @@ import time
 from getkeys import key_check
 import os
 
+from glob import glob
+
 # w = [1,0,0,0,0,0,0,0,0]
 # s = [0,1,0,0,0,0,0,0,0]
 # a = [0,0,1,0,0,0,0,0,0]
@@ -81,7 +83,9 @@ def main(file_name, starting_value):
     paused = False
     print("STARTING!!!")
 
-    counter = 1
+    n_files = len(glob("./data/*.png"))
+    counter = 1 if n_files == 0 else n_files
+    print(counter)
     while True:
         if not paused:
             screen = grab_screen(region=(0, 40, 1024, 768))
