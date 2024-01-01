@@ -6,6 +6,7 @@ Date: 12/31/2023
 from typing import Dict, Any, Tuple, List, Callable, Union, Optional
 
 import numpy as np
+import polars as pol
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -20,6 +21,7 @@ from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, RichProgressBar
 from glob import glob
 from PIL import Image
+from sklearn.model_selection import train_test_split
 from rich.progress import (
     Progress,
     MofNCompleteColumn,
@@ -34,10 +36,16 @@ from dataset_builder import DrivingDataset
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, n_actions: int, lr: float = 1e-4, weight_decay: float = 0.99):
+    def __init__(
+        self,
+        in_channels: int,
+        n_actions: int,
+        lr: float = 1e-4,
+        weight_decay: float = 0.99,
+    ):
         super().__init__()
 
-        self.model = AlexNet(n_classes=n_actions)
+        self.model = AlexNet(in_channels=in_channels, n_classes=n_actions)
 
         self.criterion = nn.CrossEntropyLoss()
         self.lr = lr
@@ -57,10 +65,12 @@ class LitModel(pl.LightningModule):
         yhat = self(X)
         loss = self.criterion(yhat, y)
 
-        acc = self.accuracy(yhat, y)
-        prec = self.precision(yhat, y)
-        rec = self.recall(yhat, y)
-        f1 = self.f1_score(yhat, y)
+        preds = F.softmax(yhat, dim=-1)
+
+        acc = self.accuracy(preds, y)
+        prec = self.precision(preds, y)
+        rec = self.recall(preds, y)
+        f1 = self.f1_score(preds, y)
 
         return {
             "loss": loss,
@@ -127,6 +137,68 @@ class LitModel(pl.LightningModule):
 
         return res["loss"]
 
+    def validation_step(
+        self, batch: torch.Tensor, batch_idx: torch.Tensor
+    ) -> torch.Tensor:
+        res = self._common_steps(batch=batch)
+
+        self.log(
+            f"val_loss",
+            res["loss"],
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+            prog_bar=True,
+            rank_zero_only=True,
+        )
+
+        self.log(
+            f"val_accuracy",
+            res["accuracy"],
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+            prog_bar=True,
+            rank_zero_only=True,
+        )
+
+        self.log(
+            f"val_precision",
+            res["precision"],
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+            prog_bar=True,
+            rank_zero_only=True,
+        )
+
+        self.log(
+            f"val_recall",
+            res["recall"],
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+            prog_bar=True,
+            rank_zero_only=True,
+        )
+
+        self.log(
+            f"val_f1_score",
+            res["f1"],
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+            prog_bar=True,
+            rank_zero_only=True,
+        )
+
+        val_res = dict()
+
+        for k, v in res.items():
+            val_res[f"val_{k}"] = v
+
+        return val_res
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(),
@@ -140,7 +212,7 @@ class LitModel(pl.LightningModule):
 
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {"scheduler": scheduler, "monitor": "loss"},
+            "lr_scheduler": {"scheduler": scheduler, "monitor": "val_loss"},
         }
 
 
@@ -213,6 +285,33 @@ if __name__ == "__main__":
         help="the maximum number of epochs to train the model.",
     )
 
+    parser.add_argument(
+        "--learning_rate",
+        "-lr",
+        type=float,
+        required=False,
+        default=1e-3,
+        help="the learning rate of the model.",
+    )
+
+    parser.add_argument(
+        "--accumulate_grad_batches",
+        "-agb",
+        type=int,
+        required=False,
+        default=1,
+        help="number of batches to accumulate for gradient accumulation.",
+    )
+
+    parser.add_argument(
+        "--convert_to_grayscale",
+        "-g",
+        type=int,
+        required=False,
+        default=0,
+        help="whether to convert to grayscale or not.",
+    )
+
     args = parser.parse_args()
 
     data_path = args.data_path
@@ -223,30 +322,64 @@ if __name__ == "__main__":
     wandb_log_name = args.wandb_log_name
     n_workers = args.n_workers
     n_epochs = args.n_epochs
+    lr = args.learning_rate
+    accumulate_grad_batches = args.accumulate_grad_batches
+    convert_to_grayscale = args.convert_to_grayscale
+
+    in_channels = 1 if convert_to_grayscale else 3
+
+    data = pol.read_parquet(data_path)
+
+    train_data, val_data = train_test_split(
+        data,
+        test_size=0.2,
+        shuffle=True,
+        stratify=data.select("label"),
+        random_state=32,
+    )
 
     transformation = A.Compose([A.Normalize(always_apply=True)])
-    dataset = DrivingDataset(path=data_path, resize=227, transforms=transformation)
+    train_dataset = DrivingDataset(
+        data=train_data,
+        convert_to_grayscale=bool(convert_to_grayscale),
+        resize=227,
+        transforms=None,
+    )
+    val_dataset = DrivingDataset(
+        data=val_data,
+        convert_to_grayscale=bool(convert_to_grayscale),
+        resize=227,
+        transforms=None,
+    )
 
-    dataloader = td.DataLoader(
-        dataset=dataset,
+    train_dataloader = td.DataLoader(
+        dataset=train_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
+        num_workers=n_workers,
+        pin_memory=True,
+    )
+
+    val_dataloader = td.DataLoader(
+        dataset=val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
         num_workers=n_workers,
         pin_memory=True,
     )
 
     logger = WandbLogger(name=wandb_log_name, project="PyWatchDogs2")
     model_checkpoint = ModelCheckpoint(
-        monitor="loss",
+        monitor="val_loss",
         dirpath=model_folder,
-        filename=model_name,
+        filename=f"{model_name}_{n_epochs}_{lr}",
         verbose=True,
         every_n_epochs=checkpoint_interval,
     )
 
     prog_bar = RichProgressBar()
 
-    lit_model = LitModel(n_actions=9)
+    lit_model = LitModel(in_channels=in_channels, n_actions=9, lr=lr)
 
     trainer = pl.Trainer(
         accelerator="cuda",
@@ -255,7 +388,11 @@ if __name__ == "__main__":
         logger=logger,
         callbacks=[model_checkpoint, prog_bar],
         max_epochs=n_epochs,
-        accumulate_grad_batches=4,
+        accumulate_grad_batches=accumulate_grad_batches,
     )
 
-    trainer.fit(model=lit_model, train_dataloaders=dataloader)
+    trainer.fit(
+        model=lit_model,
+        train_dataloaders=train_dataloader,
+        val_dataloaders=val_dataloader,
+    )

@@ -51,6 +51,8 @@ def resample(data: pl.DataFrame):
     print(value_counts)
     print("\n\n")
 
+    final_data.sample(fraction=1.0, shuffle=True, seed=32)
+
     final_data.write_parquet("./data/resampled_data.parquet")
 
 

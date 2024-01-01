@@ -18,19 +18,15 @@ from PIL import Image
 class DrivingDataset(td.Dataset):
     def __init__(
         self,
-        path: str,
+        data: pl.DataFrame,
+        convert_to_grayscale: bool,
         resize: int | Tuple = 227,
         transforms: Optional[A.Compose] = None,
     ):
-        self.path = path
+        self.data = data
+        self.convert_to_grayscale = convert_to_grayscale
         self.resize = (resize, resize) if isinstance(resize, int) else resize
         self.transforms = transforms
-
-        self.data = self._load_data(path)
-
-    def _load_data(self, path: str) -> np.ndarray:
-        data = pl.read_parquet(path)
-        return data
 
     def __len__(self) -> int:
         return self.data.shape[0]
@@ -39,11 +35,17 @@ class DrivingDataset(td.Dataset):
         img_file = self.data.item(idx, "img_file")
         label = self.data.item(idx, "label")
 
-        img = Image.open(img_file).convert("RGB")
+        if self.convert_to_grayscale:
+            img = Image.open(img_file).convert("L")
+        else:
+            img = Image.open(img_file).convert("RGB")
 
         img = img.resize(self.resize, resample=Image.Resampling.NEAREST)
 
         img = np.array(img)
+
+        if len(img.shape) == 2:
+            img = np.expand_dims(img, axis=2)
 
         if self.transforms is not None:
             img_obj = self.transforms(image=img)
