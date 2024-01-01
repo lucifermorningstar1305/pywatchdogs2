@@ -36,6 +36,9 @@ if __name__ == "__main__":
 
     data = defaultdict(lambda: list())
 
+    if not os.path.exists("./data/"):
+        os.mkdir("./data/")
+
     for root, folders, files in os.walk(data_path):
         for filename in files:
             label = filename.split(".")[0].split("_")[-1]
