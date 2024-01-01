@@ -20,46 +20,46 @@ import os
 # sd = [0,0,0,0,0,0,0,1,0]
 # nk = [0,0,0,0,0,0,0,0,1]
 
-w,s,a,d,wa,wd,sa,sd,nk = 0,1,2,3,4,5,6,7,8
+w, s, a, d, wa, wd, sa, sd, nk = 0, 1, 2, 3, 4, 5, 6, 7, 8
 
 starting_value = 1
 
 while True:
-    file_name = './data/phase_1/training_data-{}.npy'.format(starting_value)
+    file_name = "./data/phase_1/training_data-{}.npy".format(starting_value)
 
     if os.path.isfile(file_name):
-        print('File exists, moving along',starting_value)
+        print("File exists, moving along", starting_value)
         starting_value += 1
     else:
-        print('File does not exist, starting fresh!',starting_value)
-        
+        print("File does not exist, starting fresh!", starting_value)
+
         break
 
 
 def keys_to_output(keys):
-    '''
+    """
     Convert keys to a ...multi-hot... array
      0  1  2  3  4   5   6   7    8
     [W, S, A, D, WA, WD, SA, SD, NOKEY] boolean values.
-    '''
+    """
     # output = [0,0,0,0,0,0,0,0,0]
     output = None
 
-    if 'W' in keys and 'A' in keys:
+    if "W" in keys and "A" in keys:
         output = wa
-    elif 'W' in keys and 'D' in keys:
+    elif "W" in keys and "D" in keys:
         output = wd
-    elif 'S' in keys and 'A' in keys:
+    elif "S" in keys and "A" in keys:
         output = sa
-    elif 'S' in keys and 'D' in keys:
+    elif "S" in keys and "D" in keys:
         output = sd
-    elif 'W' in keys:
+    elif "W" in keys:
         output = w
-    elif 'S' in keys:
+    elif "S" in keys:
         output = s
-    elif 'A' in keys:
+    elif "A" in keys:
         output = a
-    elif 'D' in keys:
+    elif "D" in keys:
         output = d
     else:
         output = nk
@@ -67,68 +67,49 @@ def keys_to_output(keys):
 
 
 def main(file_name, starting_value):
-
     if not os.path.exists("./data/"):
         os.mkdir("./data/")
-
 
     file_name = file_name
     starting_value = starting_value
     training_data = []
     for i in list(range(10))[::-1]:
-        print(i+1)
+        print(i + 1)
         time.sleep(1)
 
     last_time = time.time()
     paused = False
-    print('STARTING!!!')
+    print("STARTING!!!")
 
     counter = 1
-    while(True):
-        
+    while True:
         if not paused:
-            screen = grab_screen(region=(0,40,1024,768))
+            screen = grab_screen(region=(0, 40, 1024, 768))
             last_time = time.time()
             # resize to something a bit more acceptable for a CNN
             screen = cv2.resize(screen, (512, 512))
             # run a color convert:
             screen = cv2.cvtColor(screen, cv2.COLOR_BGR2RGB)
-            
+
             keys = key_check()
             output = keys_to_output(keys)
-            training_data.append([screen,output])
 
             print(output)
 
             cv2.imwrite(f"./data/img{counter}_{output}.png", screen)
             counter += 1
 
-            #print('loop took {} seconds'.format(time.time()-last_time))
-            last_time = time.time()
-##            cv2.imshow('window',cv2.resize(screen,(640,360)))
-##            if cv2.waitKey(25) & 0xFF == ord('q'):
-##                cv2.destroyAllWindows()
-##                break
+            if counter % 100 == 0:
+                print(f"Number of images collected: {counter}")
 
-            # if len(training_data) % 100 == 0:
-            #     print(len(training_data))
-                
-            #     if len(training_data) == 1000:
-            #         np.save(file_name,training_data)
-            #         print('SAVED')
-            #         training_data = []
-            #         starting_value += 1
-            #         file_name = 'E:/pywatchdogs2/data/phase_1/training_data-{}.npy'.format(starting_value)
-
-                    
         keys = key_check()
-        if 'T' in keys:
+        if "T" in keys:
             if paused:
                 paused = False
-                print('unpaused!')
+                print("unpaused!")
                 time.sleep(1)
             else:
-                print('Pausing!')
+                print("Pausing!")
                 paused = True
                 time.sleep(1)
 
