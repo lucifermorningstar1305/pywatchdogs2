@@ -6,6 +6,7 @@ Date: 01/01/2024
 import numpy as np
 import polars as pl
 import gc
+import argparse
 
 
 def show_value_counts(data: pl.DataFrame):
@@ -16,7 +17,7 @@ def show_value_counts(data: pl.DataFrame):
     return value_counts
 
 
-def resample(data: pl.DataFrame):
+def resample(data: pl.DataFrame, save_path: str):
     """Function to balance the data"""
 
     value_counts = show_value_counts(data)
@@ -53,9 +54,30 @@ def resample(data: pl.DataFrame):
 
     final_data.sample(fraction=1.0, shuffle=True, seed=32)
 
-    final_data.write_parquet("./data/resampled_data.parquet")
+    final_data.write_parquet(save_path)
 
 
 if __name__ == "__main__":
-    df = pl.read_parquet("./data/set_1.parquet")
-    resample(df)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data_path",
+        "-D",
+        type=str,
+        required=True,
+        help="the path containing the data.",
+    )
+
+    parser.add_argument(
+        "--save_path",
+        "-s",
+        type=str,
+        required=True,
+        help="the path to save the metadata",
+    )
+
+    args = parser.parse_args()
+
+    data_path = args.data_path
+    save_path = args.save_path
+    df = pl.read_parquet(data_path)
+    resample(df, save_path)
