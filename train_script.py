@@ -41,7 +41,7 @@ class LitModel(pl.LightningModule):
         in_channels: int,
         n_actions: int,
         lr: float = 1e-4,
-        weight_decay: float = 0.99,
+        weight_decay: float = 0.0,
     ):
         super().__init__()
 
@@ -62,7 +62,8 @@ class LitModel(pl.LightningModule):
 
     def _common_steps(self, batch: torch.Tensor) -> Dict:
         X, y = batch["img"], batch["label"]
-        yhat = self(X)
+        X /= 255.0
+        yhat = self.forward(X)
         loss = self.criterion(yhat, y)
 
         preds = F.softmax(yhat, dim=-1)
@@ -201,9 +202,9 @@ class LitModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
-            self.parameters(),
+            self.model.parameters(),
             lr=self.lr,
-            betas=(0.9, 0.99),
+            betas=(0.9, 0.999),
             weight_decay=self.weight_decay,
         )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -242,14 +243,6 @@ if __name__ == "__main__":
         type=str,
         default="baseline",
         help="name of the model to save with",
-    )
-    parser.add_argument(
-        "--checkpoint_interval",
-        "-c",
-        required=False,
-        type=int,
-        default=500,
-        help="interval at which to save the model for every epochs",
     )
     parser.add_argument(
         "--batch_size",
@@ -317,7 +310,6 @@ if __name__ == "__main__":
     data_path = args.data_path
     model_folder = args.model_folder
     model_name = args.model_name
-    checkpoint_interval = args.checkpoint_interval
     batch_size = args.batch_size
     wandb_log_name = args.wandb_log_name
     n_workers = args.n_workers
@@ -374,7 +366,6 @@ if __name__ == "__main__":
         dirpath=model_folder,
         filename=f"{model_name}_{n_epochs}_{lr}",
         verbose=True,
-        every_n_epochs=checkpoint_interval,
     )
 
     prog_bar = RichProgressBar()

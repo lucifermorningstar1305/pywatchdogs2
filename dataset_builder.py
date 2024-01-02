@@ -51,10 +51,6 @@ class DrivingDataset(td.Dataset):
             img_obj = self.transforms(image=img)
             img = img_obj["image"]
 
-        else:
-            img = img.astype(np.float32)
-            img /= 255.0
-
         img = np.transpose(img, (2, 0, 1))  # (C, H, W)
 
         img = torch.from_numpy(img).float()
