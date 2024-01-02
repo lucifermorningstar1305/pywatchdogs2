@@ -322,6 +322,8 @@ if __name__ == "__main__":
 
     data = pol.read_parquet(data_path)
 
+    n_actions = data.select("label").unique().sort(by="label").shape[0]
+
     train_data, val_data = train_test_split(
         data,
         test_size=0.001,
@@ -370,7 +372,7 @@ if __name__ == "__main__":
 
     prog_bar = RichProgressBar()
 
-    lit_model = LitModel(in_channels=in_channels, n_actions=9, lr=lr)
+    lit_model = LitModel(in_channels=in_channels, n_actions=n_actions, lr=lr)
 
     trainer = pl.Trainer(
         accelerator="cuda",

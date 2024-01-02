@@ -40,7 +40,7 @@ class DrivingDataset(td.Dataset):
         else:
             img = Image.open(img_file).convert("RGB")
 
-        img = img.resize(self.resize, resample=Image.Resampling.NEAREST)
+        img = img.resize(self.resize, resample=Image.Resampling.BILINEAR)
 
         img = np.array(img)
 
